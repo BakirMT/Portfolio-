@@ -1,0 +1,6 @@
+{
+  "name": "Graphic Design Portfolio",
+  "description": "A 3D portfolio featuring interactive models and case studies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

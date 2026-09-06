@@ -1,0 +1,17 @@
+{
+  "project_id": "symmetric-quota-t6ppv",
+  "collections": [
+    {
+      "name": "projects",
+      "description": "Portfolio projects managed by the site owner.",
+      "fields": [
+        { "name": "title", "type": "string", "description": "Project title" },
+        { "name": "category", "type": "string", "description": "Project category" },
+        { "name": "description", "type": "string", "description": "Project description" },
+        { "name": "image", "type": "string", "description": "Image URL" },
+        { "name": "createdAt", "type": "timestamp", "description": "Creation time" },
+        { "name": "order", "type": "number", "description": "Ordering of projects" }
+      ]
+    }
+  ]
+}
