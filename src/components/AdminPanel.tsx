@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { auth, db, googleProvider, ProjectData } from '../lib/firebase';
+import { auth, db, googleProvider, ProjectData, SocialLinkData } from '../lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import { X, Plus, Trash2, Edit2, LogOut, Check } from 'lucide-react';
+import { X, Plus, Trash2, Edit2, LogOut, Check, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { projects as defaultProjects } from '../data';
 
 interface AdminPanelProps {
@@ -14,10 +14,15 @@ interface AdminPanelProps {
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [activeTab, setActiveTab] = useState<'projects' | 'links'>('projects');
   
+  const [projects, setProjects] = useState<ProjectData[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ title: '', category: '', description: '', image: '', order: 0 });
+
+  const [links, setLinks] = useState<SocialLinkData[]>([]);
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [linkFormData, setLinkFormData] = useState({ platform: 'LinkedIn', url: '', order: 0 });
 
   const ADMIN_EMAIL = 'bakirmannarkkad170@gmail.com';
 
@@ -43,7 +48,21 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       toast.error('Failed to load projects: ' + error.message);
     });
 
-    return () => unsubscribe();
+    const linksQuery = query(collection(db, 'socialLinks'), orderBy('order', 'asc'));
+    const unsubscribeLinks = onSnapshot(linksQuery, (snapshot) => {
+      const lnks: SocialLinkData[] = [];
+      snapshot.forEach((doc) => {
+        lnks.push({ id: doc.id, ...doc.data() } as SocialLinkData);
+      });
+      setLinks(lnks);
+    }, (error) => {
+      toast.error('Failed to load links: ' + error.message);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeLinks();
+    };
   }, [user]);
 
   const handleLogin = async () => {
@@ -124,6 +143,40 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
+  const resetLinkForm = () => {
+    setEditingLinkId(null);
+    setLinkFormData({ platform: 'LinkedIn', url: '', order: links.length });
+  };
+
+  const handleLinkSave = async () => {
+    if (!linkFormData.url) {
+      toast.error('URL is required');
+      return;
+    }
+    try {
+      if (editingLinkId) {
+        await updateDoc(doc(db, 'socialLinks', editingLinkId), { ...linkFormData });
+        toast.success('Link updated');
+      } else {
+        await addDoc(collection(db, 'socialLinks'), { ...linkFormData, createdAt: serverTimestamp() });
+        toast.success('Link added');
+      }
+      resetLinkForm();
+    } catch (error: any) {
+      toast.error('Failed to save link: ' + error.message);
+    }
+  };
+
+  const handleLinkDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this link?')) return;
+    try {
+      await deleteDoc(doc(db, 'socialLinks', id));
+      toast.success('Link deleted');
+    } catch (error: any) {
+      toast.error('Failed to delete link');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
       <motion.div 
@@ -158,9 +211,26 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Form */}
-              <div className="lg:col-span-1 space-y-4">
+            <div className="flex flex-col h-full">
+              <div className="flex space-x-4 mb-6 border-b border-slate-200 dark:border-white/10 pb-2">
+                <button
+                  onClick={() => setActiveTab('projects')}
+                  className={`flex items-center gap-2 pb-2 px-1 border-b-2 font-bold uppercase tracking-widest text-xs transition-colors ${activeTab === 'projects' ? 'border-indigo-500 text-indigo-500' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+                >
+                  <ImageIcon size={16} /> Projects
+                </button>
+                <button
+                  onClick={() => setActiveTab('links')}
+                  className={`flex items-center gap-2 pb-2 px-1 border-b-2 font-bold uppercase tracking-widest text-xs transition-colors ${activeTab === 'links' ? 'border-indigo-500 text-indigo-500' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+                >
+                  <LinkIcon size={16} /> Social Links
+                </button>
+              </div>
+
+              {activeTab === 'projects' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Form */}
+                  <div className="lg:col-span-1 space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-4">
                   {editingId ? 'Edit Project' : 'Add New Project'}
                 </h3>
@@ -288,6 +358,107 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                   )}
                 </div>
               </div>
+            </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Links Form */}
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-4">
+                    {editingLinkId ? 'Edit Link' : 'Add New Link'}
+                  </h3>
+                  
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Platform</label>
+                    <select 
+                      value={linkFormData.platform} 
+                      onChange={e => setLinkFormData({...linkFormData, platform: e.target.value})}
+                      className="w-full bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    >
+                      <option value="LinkedIn">LinkedIn</option>
+                      <option value="GitHub">GitHub</option>
+                      <option value="Behance">Behance</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">URL</label>
+                    <input 
+                      type="text" 
+                      value={linkFormData.url} 
+                      onChange={e => setLinkFormData({...linkFormData, url: e.target.value})}
+                      placeholder="https://..."
+                      className="w-full bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Order (0 = first)</label>
+                    <input 
+                      type="number" 
+                      value={linkFormData.order} 
+                      onChange={e => setLinkFormData({...linkFormData, order: parseInt(e.target.value) || 0})}
+                      className="w-full bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      onClick={handleLinkSave}
+                      className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-colors"
+                    >
+                      {editingLinkId ? <><Check size={16} /> Update</> : <><Plus size={16} /> Add</>}
+                    </button>
+                    {editingLinkId && (
+                      <button 
+                        onClick={resetLinkForm}
+                        className="px-4 bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white font-bold rounded-xl hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Links List */}
+                <div className="lg:col-span-2 space-y-4 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest mb-4">Existing Links</h3>
+                  <div className="space-y-3">
+                    {links.length === 0 ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 italic">No links found. Add one above.</p>
+                    ) : (
+                      links.map(l => (
+                        <div key={l.id} className="flex gap-4 p-3 bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 rounded-xl items-center">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{l.platform}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{l.url}</p>
+                            <span className="text-[10px] bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full mt-1 inline-block">Order: {l.order}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => {
+                                setEditingLinkId(l.id!);
+                                setLinkFormData({ platform: l.platform, url: l.url, order: l.order });
+                              }}
+                              className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleLinkDelete(l.id!)}
+                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
           )}
         </div>

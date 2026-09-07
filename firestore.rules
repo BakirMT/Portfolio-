@@ -7,5 +7,12 @@ service cloud.firestore {
       // Only the specific admin email can modify projects
       allow write: if request.auth != null && request.auth.token.email == "bakirmannarkkad170@gmail.com";
     }
+    
+    match /socialLinks/{document} {
+      // Anyone can view the links
+      allow read: if true;
+      // Only the specific admin email can modify links
+      allow write: if request.auth != null && request.auth.token.email == "bakirmannarkkad170@gmail.com";
+    }
   }
 }

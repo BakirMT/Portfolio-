@@ -1,9 +1,55 @@
 import { motion } from 'motion/react';
-import { useState } from 'react';
-import { Mail, MapPin, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, MapPin, Send, Github, Linkedin, Instagram } from 'lucide-react';
+import { db, SocialLinkData } from '../lib/firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+
+const BehanceIcon = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M8 14.5c1.7 0 3-1.1 3-2.5s-1.3-2.5-3-2.5H4v5h4z" />
+    <path d="M8 9.5c1.7 0 2.5-1 2.5-2s-1-2-2.5-2H4v4h4z" />
+    <path d="M20 14.5c0-1.7-1.3-3-3-3s-3 1.3-3 3 1.3 3 3 3 3-1.3 3-3z" />
+    <path d="M15.5 11h3" />
+    <path d="M4 18.5h5" />
+    <path d="M4 5.5h5" />
+  </svg>
+);
+
+const WhatsappIcon = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+  </svg>
+);
 
 export function Contact() {
   const [status, setStatus] = useState<'idle' | 'sending' | 'success'>('idle');
+  const [links, setLinks] = useState<SocialLinkData[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'socialLinks'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const lnks: SocialLinkData[] = [];
+      snapshot.forEach((doc) => {
+        lnks.push({ id: doc.id, ...doc.data() } as SocialLinkData);
+      });
+      setLinks(lnks);
+    }, (error) => {
+      console.error('Failed to load links: ' + error.message);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const getIcon = (platform: string, size: number) => {
+    switch (platform) {
+      case 'LinkedIn': return <Linkedin size={size} />;
+      case 'GitHub': return <Github size={size} />;
+      case 'Behance': return <BehanceIcon size={size} />;
+      case 'Instagram': return <Instagram size={size} />;
+      case 'WhatsApp': return <WhatsappIcon size={size} />;
+      default: return <Linkedin size={size} />;
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +96,17 @@ export function Contact() {
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-1">Location</p>
                   <p className="text-sm sm:text-base md:text-lg font-bold tracking-wide group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">Kerala, India</p>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-200 dark:border-white/10">
+                <p className="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-4">Connect with me</p>
+                <div className="flex flex-wrap gap-4">
+                  {links.map((link) => (
+                    <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-200 dark:hover:border-indigo-500/30 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all hover:-translate-y-1" aria-label={link.platform}>
+                      {getIcon(link.platform, 20)}
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
@@ -120,9 +177,12 @@ export function Contact() {
       
       <div className="max-w-7xl mx-auto mt-32 pt-8 border-t border-slate-200 dark:border-white/10 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500 font-bold uppercase tracking-widest transition-colors duration-500">
         <p>© {new Date().getFullYear()} Bakir M.T.</p>
-        <div className="flex space-x-6 mt-4 md:mt-0">
-          <a href="https://www.linkedin.com/in/muhammedunil-bakhir-mt/" target="_blank" rel="noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors">LinkedIn</a>
-          <a href="https://github.com/BakirMT" target="_blank" rel="noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors">GitHub</a>
+        <div className="flex space-x-4 mt-4 md:mt-0">
+          {links.map((link) => (
+            <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-500 transition-colors" aria-label={link.platform}>
+              {getIcon(link.platform, 18)}
+            </a>
+          ))}
         </div>
       </div>
     </section>

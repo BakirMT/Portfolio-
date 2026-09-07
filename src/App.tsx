@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { Background3D } from './canvas/Background3D';
 import { CustomCursor } from './components/CustomCursor';
@@ -18,6 +19,13 @@ import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -38,6 +46,10 @@ export default function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-[#050506] text-slate-900 dark:text-white font-sans selection:bg-indigo-500/30 overflow-hidden relative flex flex-col transition-colors duration-500">
+        <motion.div
+          className="fixed top-0 left-0 right-0 h-1 bg-indigo-600 dark:bg-indigo-500 z-[9999] origin-left"
+          style={{ scaleX }}
+        />
         <Toaster position="bottom-right" toastOptions={{ className: 'dark:bg-slate-800 dark:text-white' }} />
         {isAdminOpen && <AdminPanel onClose={() => window.location.hash = ''} />}
         <div className="fixed inset-0 pointer-events-none z-0">

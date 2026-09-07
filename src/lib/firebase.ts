@@ -27,3 +27,10 @@ export interface ProjectData {
   order: number;
   createdAt?: any;
 }
+
+export interface SocialLinkData {
+  id?: string;
+  platform: string; // 'LinkedIn', 'GitHub', 'Behance', 'Instagram', 'WhatsApp'
+  url: string;
+  order: number;
+}
