@@ -58,17 +58,24 @@ export function Contact() {
 
         <div className="w-full md:w-7/12">
           <motion.form
+            action="https://formsubmit.co/bakirmannarkkad170@gmail.com"
+            method="POST"
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            onSubmit={handleSubmit}
             className="flex flex-col space-y-8 p-10 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl transition-colors duration-500"
           >
+            {/* Optional: disable captcha */}
+            <input type="hidden" name="_captcha" value="false" />
+            {/* Optional: set next URL after submit */}
+            <input type="hidden" name="_next" value={window.location.href} />
+
             <div className="flex flex-col space-y-2">
               <label htmlFor="name" className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Name</label>
               <input 
                 type="text" 
+                name="name"
                 id="name" 
                 required
                 className="bg-transparent border-b border-slate-300 dark:border-white/20 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
@@ -80,6 +87,7 @@ export function Contact() {
               <label htmlFor="email" className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Email</label>
               <input 
                 type="email" 
+                name="email"
                 id="email" 
                 required
                 className="bg-transparent border-b border-slate-300 dark:border-white/20 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
@@ -91,6 +99,7 @@ export function Contact() {
               <label htmlFor="message" className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Message</label>
               <textarea 
                 id="message" 
+                name="message"
                 rows={4}
                 required
                 className="bg-transparent border-b border-slate-300 dark:border-white/20 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none"
@@ -100,13 +109,10 @@ export function Contact() {
             
             <button 
               type="submit"
-              disabled={status !== 'idle'}
-              className="self-start px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-black font-bold rounded-full flex items-center space-x-2 hover:scale-105 transition-transform disabled:opacity-70 disabled:hover:scale-100 text-sm uppercase tracking-wider mt-4"
+              className="self-start px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-black font-bold rounded-full flex items-center space-x-2 hover:scale-105 transition-transform text-sm uppercase tracking-wider mt-4"
             >
-              <span>
-                {status === 'idle' ? 'Send Message' : status === 'sending' ? 'Sending...' : 'Message Sent!'}
-              </span>
-              {status === 'idle' && <Send size={18} />}
+              <span>Send Message</span>
+              <Send size={18} />
             </button>
           </motion.form>
         </div>

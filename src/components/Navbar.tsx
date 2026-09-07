@@ -1,10 +1,6 @@
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
 
 export function Navbar() {
-  const { theme, toggleTheme } = useTheme();
-
   const scrollTo = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -31,14 +27,6 @@ export function Navbar() {
         <button onClick={() => scrollTo('education')} className="hover:text-slate-900 dark:hover:text-white transition-colors">Education</button>
         <button onClick={() => scrollTo('contact')} className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</button>
       </div>
-
-      <button
-        onClick={toggleTheme}
-        className="w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 dark:border-white/20 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
     </motion.nav>
   );
 }
